@@ -20,7 +20,12 @@ require('./cron')();
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5175', 'http://127.0.0.1:5173', 'http://127.0.0.1:5175'],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        // In development, allow localhost. In production, we'll allow specific domains or just reflect origin for this demo
+        return callback(null, true);
+    },
     credentials: true
 }));
 app.use(express.json());
