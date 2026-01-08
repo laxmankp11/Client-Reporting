@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-color: #4f46e5;
+  --secondary-color: #64748b;
+  --bg-gradient-start: #f8fafc;
+  --bg-gradient-end: #f1f5f9;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased font-sans;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Outfit', sans-serif;
+  }
+}
+
+@layer components {
+
+  /* Glassmorphism Card */
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-xl rounded-2xl transition-all duration-300;
+  }
+
+  .glass-card:hover {
+    @apply shadow-2xl scale-[1.01] bg-white/90;
+  }
+
+  /* Premium Buttons */
+  .btn-premium {
+    @apply px-6 py-2.5 rounded-xl font-medium transition-all duration-300 transform active:scale-95 shadow-md hover:shadow-lg;
+  }
+
+  .btn-primary-gradient {
+    @apply bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700;
+  }
+
+  .nav-item-active {
+    @apply bg-indigo-50 text-indigo-600 relative overflow-hidden;
+  }
+
+  .nav-item-active::before {
+    content: '';
+    @apply absolute left-0 top-0 h-full w-1 bg-indigo-600 rounded-r-full;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400;
+}
