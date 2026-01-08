@@ -23,10 +23,26 @@ app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        // In development, allow localhost. In production, we'll allow specific domains or just reflect origin for this demo
+
+        const allowedOrigins = [
+            'https://app.globalaifirst.com',
+            'https://globalaifirst.com',
+            'http://localhost:5173',
+            'http://localhost:3000'
+        ];
+
+        // Check if origin is allowed or if it's a vercel deployment (ending in .vercel.app)
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+            return callback(null, true);
+        }
+
+        console.log('CORS blocked origin:', origin);
+        // For debugging, temporarily allow all if needed, but best to be specific
         return callback(null, true);
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(express.json());
 

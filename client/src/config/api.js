@@ -9,9 +9,14 @@ let API_URL = 'https://client-reporting.onrender.com/api';
 //     API_URL = 'http://127.0.0.1:5002/api';
 // }
 
-// Allow environment variable override (if it exists and is not empty)
+// Allow environment variable override, BUT IGNORE LOCALHOST in production
 if (import.meta.env.VITE_API_URL) {
-    API_URL = import.meta.env.VITE_API_URL;
+    const envUrl = import.meta.env.VITE_API_URL;
+    // If the env var is localhost, but we are not running locally, ignore it.
+    // This protects against accidental Vercel env vars point to localhost
+    if (!envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+        API_URL = envUrl;
+    }
 }
 
 export default API_URL;
