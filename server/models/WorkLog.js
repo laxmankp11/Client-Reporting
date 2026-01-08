@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const workLogSchema = new mongoose.Schema({
     description: { type: String, required: true },
     title: { type: String }, // Optional title, useful for Action Items
-    type: { type: String, enum: ['log', 'action'], default: 'log' },
+    type: { type: String, enum: ['log', 'action', 'report', 'observation'], default: 'log' },
     isStarred: { type: Boolean, default: false },
     status: { type: String, enum: ['pending', 'approved', 'rejected', 'responded', 'completed'], default: 'pending' },
     clientResponse: { type: String },

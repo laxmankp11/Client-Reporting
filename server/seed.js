@@ -16,13 +16,21 @@ const seedUsers = async () => {
         await WorkLog.deleteMany();
 
         const salt = await bcrypt.genSalt(10);
+        const dedupeSalt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash('123456', salt);
-        const clientPassword = await bcrypt.hash('12345678', salt);
+        const clientPassword = await bcrypt.hash('12345678', dedupeSalt);
 
         // 1. Create Users
         const clientOnfees = await User.create({
-            name: 'OnFees Client',
-            email: 'info@onfees.com',
+            name: 'GenAI Solutions',
+            email: 'info@genai.com',
+            password: clientPassword,
+            role: 'client'
+        });
+
+        const clientOnCampus = await User.create({
+            name: 'OnCampus ERP',
+            email: 'admin@oncampuserp.com',
             password: clientPassword,
             role: 'client'
         });
@@ -34,504 +42,205 @@ const seedUsers = async () => {
             role: 'admin'
         });
 
-        const client1 = await User.create({
-            name: 'Acme Corp',
-            email: 'client@example.com',
-            password: clientPassword,
-            role: 'client'
-        });
-
-        const client2 = await User.create({
-            name: 'TechStart Inc',
-            email: 'techstart@example.com',
-            password: clientPassword,
-            role: 'client'
-        });
-
         const developer1 = await User.create({
-            name: 'John Dev',
-            email: 'dev@example.com',
-            password: hashedPassword,
-            role: 'developer'
-        });
-
-        const developer2 = await User.create({
-            name: 'Sarah Code',
+            name: 'Sarah Smith',
             email: 'sarah@example.com',
             password: hashedPassword,
             role: 'developer'
         });
 
-        const developer3 = await User.create({
-            name: 'Mike Builder',
+        const developer2 = await User.create({
+            name: 'Mike Chen',
             email: 'mike@example.com',
             password: hashedPassword,
             role: 'developer'
-        });
-
-        // 4. Create OnCampusERP Client
-        const oncampusUser = await User.create({
-            name: 'OnCampus ERP',
-            email: 'admin@oncampuserp.com',
-            password: clientPassword,
-            role: 'client',
-            gstin: '29AAHCG9999K1Z5',
-            address: 'Tech Park, Bangalore'
         });
 
         console.log('Users created');
 
         // 2. Create Websites
         const website1 = await Website.create({
-            name: 'Acme Corp Main Site',
-            url: 'https://acme.example.com',
-            client: client1._id,
+            name: 'GenAI SaaS Platform',
+            url: 'https://platform.genai.com',
+            client: clientOnfees._id,
             developers: [developer1._id, developer2._id],
-            seoHealthScore: 85,
+            seoHealthScore: 92,
             seoData: {
-                title: 'Acme Corp - Leaders in Innovation',
-                description: 'We enable future technologies.',
-                h1: ['Welcome to Acme Corp'],
+                title: 'GenAI - Enterprise AI Solutions',
+                description: 'Leverage the power of generative AI for your enterprise.',
+                h1: ['Transform Your Business with AI'],
                 ogImage: 'https://via.placeholder.com/1200x630',
-                loadTime: 850
-            },
-            lastSeoScan: new Date()
-        });
-
-        const website2 = await Website.create({
-            name: 'Acme E-Commerce',
-            url: 'https://shop.acme.example.com',
-            client: client1._id,
-            developers: [developer2._id, developer3._id],
-            seoHealthScore: 72,
-            seoData: {
-                title: 'Acme Shop - Premium Products',
-                description: 'Shop the best products online.',
-                h1: ['Shop Now'],
-                ogImage: 'https://via.placeholder.com/1200x630',
-                loadTime: 1200
-            },
-            lastSeoScan: new Date()
-        });
-
-        const website3 = await Website.create({
-            name: 'TechStart Platform',
-            url: 'https://techstart.example.com',
-            client: client2._id,
-            developers: [developer1._id, developer3._id],
-            seoHealthScore: 91,
-            seoData: {
-                title: 'TechStart - Innovation Platform',
-                description: 'Building the future of tech.',
-                h1: ['Welcome to TechStart'],
-                ogImage: 'https://via.placeholder.com/1200x630',
-                loadTime: 650
+                loadTime: 450
             },
             lastSeoScan: new Date()
         });
 
         const websiteOnCampus = await Website.create({
-            name: 'OnCampus ERP',
-            url: 'https://www.oncampuserp.com',
-            client: oncampusUser._id,
+            name: 'OnCampus ERP System',
+            url: 'https://oncampuserp.com',
+            client: clientOnCampus._id,
             developers: [developer1._id, developer2._id],
-            seoHealthScore: 88,
+            seoHealthScore: 89,
             seoData: {
-                title: 'OnCampus ERP - Best College Management Software',
-                description: 'Comprehensive ERP solution for educational institutions.',
-                h1: ['Transform Your Campus Management'],
-                ogImage: 'https://www.oncampuserp.com/og-image.jpg',
-                loadTime: 750
+                title: 'OnCampus - Smart Education Management',
+                description: 'Comprehensive ERP for educational institutions. Streamline admissions, fees, and academics.',
+                h1: ['Streamline Your Campus Operations'],
+                ogImage: 'https://via.placeholder.com/1200x630',
+                loadTime: 580
             },
-            lastSeoScan: new Date(),
-            config: {
-                gaPropertyId: 'GA-123456789'
-            }
+            lastSeoScan: new Date()
         });
 
         console.log('Websites created');
 
-        // 3. Create Work Logs and Action Items (40+ entries)
+        // 3. Create High-Quality Work Logs
         const now = new Date();
         const workLogs = [];
 
-        // Today - Mix of activities
+        // --- CONVERSIONS (CRO) ---
         workLogs.push({
             developer: developer1._id,
-            website: website1._id,
+            website: websiteOnCampus._id,
             type: 'log',
-            description: 'Implemented responsive navigation menu with hamburger toggle for mobile devices. Added smooth animations and fixed z-index issues.',
-            durationMinutes: 90,
-            tags: ['frontend', 'responsive'],
+            description: 'Redesigned the "Request Demo" landing page with a sticky CTA and simplified form fields. \n\nResult: Demo request conversion rate increased by 18% in the first 48 hours.',
+            durationMinutes: 180,
+            tags: ['Conversions', 'CRO', 'UX'],
             createdAt: new Date(now - 2 * 60 * 60 * 1000), // 2 hours ago
             isStarred: true
         });
 
+        // NEW: Observation
         workLogs.push({
             developer: developer2._id,
-            website: website2._id,
-            type: 'action',
-            title: 'Approve new payment gateway integration',
-            description: 'We have integrated Stripe payment gateway with support for credit cards, Apple Pay, and Google Pay. Ready for review.',
-            status: 'pending',
-            tags: ['payment', 'integration'],
-            createdAt: new Date(now - 3 * 60 * 60 * 1000) // 3 hours ago
-        });
-
-        workLogs.push({
-            developer: developer3._id,
-            website: website3._id,
-            type: 'log',
-            description: 'Fixed critical bug in user authentication flow causing session timeouts. Updated JWT token refresh logic.',
-            durationMinutes: 120,
-            tags: ['bugfix', 'security', 'backend'],
-            createdAt: new Date(now - 4 * 60 * 60 * 1000), // 4 hours ago
-            isStarred: true
-        });
-
-        workLogs.push({
-            developer: developer1._id,
-            website: website3._id,
-            type: 'log',
-            description: 'Optimized database queries for dashboard analytics. Reduced load time from 3.2s to 0.8s.',
-            durationMinutes: 150,
-            tags: ['performance', 'database'],
-            createdAt: new Date(now - 5 * 60 * 60 * 1000) // 5 hours ago
+            website: websiteOnCampus._id,
+            type: 'observation',
+            description: 'Observed significant drop-off (65%) on the "Pricing" page from mobile devices. The comparison table is not responsive and requires horizontal scrolling, which frustrates users.',
+            durationMinutes: 30,
+            tags: ['Observation', 'Mobile', 'UX'],
+            createdAt: new Date(now - 3 * 60 * 60 * 1000)
         });
 
         workLogs.push({
             developer: developer2._id,
-            website: website1._id,
+            website: websiteOnCampus._id,
             type: 'action',
-            title: 'Review new homepage design mockups',
-            description: 'Updated homepage design with modern layout, hero section with video background, and improved call-to-action buttons. Please review attached mockups.',
+            title: 'Authorize A/B Testing Tool',
+            description: 'Requesting approval to integrate VWO for continuous A/B testing on the pricing page. Aiming to optimize the tier selection funnel.',
             status: 'approved',
-            clientResponse: 'Looks amazing! Love the new hero section. Please proceed with implementation.',
-            tags: ['design', 'ui/ux'],
-            createdAt: new Date(now - 6 * 60 * 60 * 1000) // 6 hours ago
+            clientResponse: 'Approved. We need better data on tier preference.',
+            tags: ['Conversions', 'Testing', 'Strategy'],
+            createdAt: new Date(now - 5 * 60 * 60 * 1000)
         });
 
-        // Yesterday
-        workLogs.push({
-            developer: developer3._id,
-            website: website2._id,
-            type: 'log',
-            description: 'Implemented product search with filters (category, price range, ratings). Added autocomplete suggestions.',
-            durationMinutes: 180,
-            tags: ['feature', 'search', 'frontend'],
-            createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000), // Yesterday, 2h offset
-            isStarred: false
-        });
+        // --- AEO (Answer Engine Optimization) & BLOGS ---
 
+        // NEW: Report
         workLogs.push({
             developer: developer1._id,
-            website: website1._id,
-            type: 'log',
-            description: 'Set up CI/CD pipeline with GitHub Actions. Automated testing and deployment to staging environment.',
-            durationMinutes: 240,
-            tags: ['devops', 'automation'],
-            createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000)
-        });
-
-        workLogs.push({
-            developer: developer2._id,
-            website: website2._id,
-            type: 'action',
-            title: 'Approve inventory management system',
-            description: 'Completed inventory tracking system with real-time stock updates, low stock alerts, and automatic reorder suggestions.',
-            status: 'approved',
-            clientResponse: 'Excellent work! The auto-reorder feature will save us a lot of time.',
-            tags: ['inventory', 'backend'],
-            createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000 - 5 * 60 * 60 * 1000)
-        });
-
-        workLogs.push({
-            developer: developer3._id,
-            website: website3._id,
-            type: 'log',
-            description: 'Migrated email service from SendGrid to AWS SES. Updated all email templates with new branding.',
-            durationMinutes: 90,
-            tags: ['email', 'migration'],
-            createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000 - 7 * 60 * 60 * 1000)
-        });
-
-        workLogs.push({
-            developer: developer1._id,
-            website: website2._id,
-            type: 'log',
-            description: 'Added product image zoom functionality and image gallery lightbox. Improved mobile image viewing experience.',
-            durationMinutes: 75,
-            tags: ['frontend', 'ui/ux'],
-            createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000 - 9 * 60 * 60 * 1000)
-        });
-
-        // 2 days ago
-        workLogs.push({
-            developer: developer2._id,
-            website: website1._id,
-            type: 'action',
-            title: 'Update privacy policy and cookie banner',
-            description: 'Need approval for GDPR-compliant cookie consent banner and updated privacy policy to comply with latest regulations.',
-            status: 'rejected',
-            clientResponse: 'Please revise - we need more granular cookie categories and clearer opt-out options.',
-            tags: ['legal', 'compliance'],
-            createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000 - 3 * 60 * 60 * 1000)
-        });
-
-        workLogs.push({
-            developer: developer3._id,
-            website: website3._id,
-            type: 'log',
-            description: `I modified AuthContext.jsx to correctly manage and expose the token in the context value. This ensures WebsiteContext.jsx receives the token effectively, allowing it to fetch website data and populating the dropdown.
-            
-Files Edited:
-1. AuthContext.jsx
-2. ProgressUpdates.jsx
-3. Caching AuthContext
-4. Fixing AuthContext
-
-Notifying user about the fix I've fixed the issue causing the blank page.
-
-The Problem: The application was failing to pass your login token to the website data fetcher, resulting in "No active websites found" because it thought you weren't authorized.`,
-            durationMinutes: 180,
-            tags: ['bugfix', 'auth', 'critical'],
-            createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000 - 5 * 60 * 60 * 1000),
-            isStarred: true
-        });
-
-        workLogs.push({
-            developer: developer1._id,
-            website: website1._id,
-            type: 'log',
-            description: 'Implemented user activity tracking and analytics dashboard. Added charts for page views, user engagement, and conversion rates.',
-            durationMinutes: 210,
-            tags: ['analytics', 'dashboard'],
-            createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000 - 7 * 60 * 60 * 1000)
-        });
-
-        workLogs.push({
-            developer: developer2._id,
-            website: website2._id,
-            type: 'log',
-            description: 'Added customer reviews and ratings system. Users can now rate products and leave detailed reviews with photos.',
-            durationMinutes: 165,
-            tags: ['feature', 'reviews'],
-            createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000 - 9 * 60 * 60 * 1000)
-        });
-
-        // 3 days ago
-        workLogs.push({
-            developer: developer3._id,
-            website: website3._id,
-            type: 'action',
-            title: 'Launch new API v2 endpoints',
-            description: 'New RESTful API with improved performance, better documentation, and GraphQL support. Ready for production deployment.',
-            status: 'pending',
-            tags: ['api', 'backend'],
-            createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000)
-        });
-
-        workLogs.push({
-            developer: developer1._id,
-            website: website2._id,
-            type: 'log',
-            description: 'Integrated shipping API with UPS, FedEx, and USPS. Added real-time shipping rate calculation at checkout.',
-            durationMinutes: 195,
-            tags: ['shipping', 'integration'],
-            createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000)
-        });
-
-        workLogs.push({
-            developer: developer2._id,
-            website: website1._id,
-            type: 'log',
-            description: 'Updated all dependencies to latest stable versions. Fixed security vulnerabilities reported by npm audit.',
+            website: websiteOnCampus._id,
+            type: 'report',
+            description: 'Weekly AEO Performance Report: \n- Voice Search Visibility: +25% \n- Featured Snippets: captured 3 new keywords ("best school erp", "student record system", "fee management") \n- Brand Authority in Chatbots: Rising.',
             durationMinutes: 60,
-            tags: ['security', 'maintenance'],
+            tags: ['Report', 'AEO', 'Analytics'],
+            createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000 - 1 * 60 * 60 * 1000),
+            isStarred: true
+        });
+
+        workLogs.push({
+            developer: developer1._id,
+            website: websiteOnCampus._id,
+            type: 'log',
+            description: 'Published a new detailed guide: "How to Digitalize Student Records". Structured specifically for voice search answers (AEO). \n\nResult: Already capturing the Featured Snippet for "digital student records school erp".',
+            durationMinutes: 150,
+            tags: ['AEO', 'Content', 'Voice Search'],
+            createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000 - 3 * 60 * 60 * 1000)
+        });
+
+        workLogs.push({
+            developer: developer2._id,
+            website: websiteOnCampus._id,
+            type: 'log',
+            description: 'Optimized existing FAQ section with conversational keywords ("What is the best ERP for...") to target AI chat responses. \n\nUpdate: Reduced "zero-click" searches by establishing brand authority in AI overviews.',
+            durationMinutes: 90,
+            tags: ['AEO', 'AI Optimization', 'Content'],
+            createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000 - 6 * 60 * 60 * 1000)
+        });
+
+        // --- SEO (Search Engine Optimization) ---
+        workLogs.push({
+            developer: developer1._id,
+            website: websiteOnCampus._id,
+            type: 'log',
+            description: 'Implemented "SoftwareApplication" Schema.org markup across the platform product pages. \n\nResult: Rich snippets (star ratings & price range) are now appearing in SERPs, boosting CTR by ~12%.',
+            durationMinutes: 135,
+            tags: ['SEO', 'Schema', 'Traffic'],
+            createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000),
+            isStarred: true
+        });
+
+        // NEW: Observation
+        workLogs.push({
+            developer: developer1._id,
+            website: websiteOnCampus._id,
+            type: 'observation',
+            description: 'Competitor Alert: "EduSmart" has started ranking for "school ERP AI features". They published 5 new articles this week. We need to accelerate our AI-related content strategy.',
+            durationMinutes: 45,
+            tags: ['Observation', 'Competitor Analysis', 'Strategy'],
+            createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000)
+        });
+
+        workLogs.push({
+            developer: developer2._id,
+            website: websiteOnCampus._id,
+            type: 'log',
+            description: 'Fixed critical specialized mobile usability issues on the "Parent Portal" login. \n\nResult: Mobile organic traffic bounce rate dropped from 45% to 28%.',
+            durationMinutes: 110,
+            tags: ['SEO', 'Mobile', 'Performance'],
+            createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000 - 5 * 60 * 60 * 1000)
+        });
+
+        // --- GEO (Generative Engine Optimization) ---
+        workLogs.push({
+            developer: developer1._id,
+            website: websiteOnCampus._id,
+            type: 'log',
+            description: 'Enhanced the Knowledge Graph entry for "OnCampus ERP" by linking to verified Crunchbase and LinkedIn profiles. \n\nGoal: Ensure AI models (ChatGPT, Gemini) recognize OnCampus as a distinct, authoritative entity in the EdTech space.',
+            durationMinutes: 160,
+            tags: ['GEO', 'Entity', 'Brand Authority'],
+            createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000),
+            isStarred: true
+        });
+
+        // NEW: Report
+        workLogs.push({
+            developer: developer2._id,
+            website: websiteOnCampus._id,
+            type: 'report',
+            description: 'Monthly Technical Health Report: \n- Server Uptime: 99.99% \n- Average Page Load: 0.8s (Improved from 1.2s) \n- Broken Links: 0 \n- Mobile Usability Issues: 0',
+            durationMinutes: 45,
+            tags: ['Report', 'Technical', 'Health'],
             createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000 - 6 * 60 * 60 * 1000)
         });
 
-        workLogs.push({
-            developer: developer3._id,
-            website: website2._id,
-            type: 'action',
-            title: 'Approve multi-currency support',
-            description: 'Added support for 15+ currencies with automatic conversion rates. Users can shop in their preferred currency.',
-            status: 'approved',
-            clientResponse: 'Perfect timing! This will help us expand internationally. Green light to deploy.',
-            tags: ['i18n', 'payments'],
-            createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000 - 8 * 60 * 60 * 1000)
-        });
-
-        // 4 days ago  
-        workLogs.push({
-            developer: developer1._id,
-            website: website3._id,
-            type: 'log',
-            description: 'Refactored codebase to use TypeScript. Improved type safety and developer experience.',
-            durationMinutes: 360,
-            tags: ['refactor', 'typescript'],
-            createdAt: new Date(now - 4 * 24 * 60 * 60 * 1000 - 3 * 60 * 60 * 1000)
-        });
-
+        // --- MORE CONTENT / BLOGS ---
         workLogs.push({
             developer: developer2._id,
-            website: website1._id,
-            type: 'log',
-            description: 'Created comprehensive API documentation using Swagger/OpenAPI. Added interactive examples and try-it-out feature.',
-            durationMinutes: 120,
-            tags: ['documentation', 'api'],
-            createdAt: new Date(now - 4 * 24 * 60 * 60 * 1000 - 5 * 60 * 60 * 1000)
-        });
-
-        workLogs.push({
-            developer: developer3._id,
-            website: website2._id,
-            type: 'log',
-            description: 'Implemented abandoned cart recovery email system. Automated emails sent 1h, 24h, and 72h after cart abandonment.',
-            durationMinutes: 135,
-            tags: ['email', 'automation', 'marketing'],
-            createdAt: new Date(now - 4 * 24 * 60 * 60 * 1000 - 7 * 60 * 60 * 1000)
-        });
-
-        // 5 days ago
-        workLogs.push({
-            developer: developer1._id,
-            website: website1._id,
+            website: websiteOnCampus._id,
             type: 'action',
-            title: 'New blog section design approval',
-            description: 'Designed new blog section with category filtering, featured posts, and newsletter signup. Modern card-based layout.',
-            status: 'approved',
-            clientResponse: 'Love the clean design! The newsletter signup placement is perfect.',
-            tags: ['design', 'blog'],
-            createdAt: new Date(now - 5 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000)
-        });
-
-        workLogs.push({
-            developer: developer2._id,
-            website: website3._id,
-            type: 'log',
-            description: 'Added Redis caching for frequently accessed data. API response time improved by 60%.',
-            durationMinutes: 150,
-            tags: ['performance', 'caching'],
-            createdAt: new Date(now - 5 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000),
-            isStarred: true
-        });
-
-        workLogs.push({
-            developer: developer3._id,
-            website: website2._id,
-            type: 'log',
-            description: 'Built admin dashboard for order management. Added filters, bulk actions, and export to CSV functionality.',
-            durationMinutes: 270,
-            tags: ['admin', 'dashboard'],
-            createdAt: new Date(now - 5 * 24 * 60 * 60 * 1000 - 6 * 60 * 60 * 1000)
-        });
-
-        // 6 days ago
-        workLogs.push({
-            developer: developer1._id,
-            website: website2._id,
-            type: 'log',
-            description: 'Implemented wishlist feature. Users can save products and receive notifications when items go on sale.',
-            durationMinutes: 105,
-            tags: ['feature', 'wishlist'],
-            createdAt: new Date(now - 6 * 24 * 60 * 60 * 1000 - 3 * 60 * 60 * 1000)
-        });
-
-        workLogs.push({
-            developer: developer2._id,
-            website: website1._id,
-            type: 'log',
-            description: 'Fixed SEO issues: added meta descriptions, improved heading structure, and implemented schema markup.',
-            durationMinutes: 90,
-            tags: ['seo', 'optimization'],
-            createdAt: new Date(now - 6 * 24 * 60 * 60 * 1000 - 5 * 60 * 60 * 1000)
-        });
-
-        workLogs.push({
-            developer: developer3._id,
-            website: website3._id,
-            type: 'action',
-            title: 'Mobile app beta testing approval',
-            description: 'React Native mobile app completed with offline support, push notifications, and biometric authentication. Ready for beta testing.',
+            title: 'Blog Post Draft: "AI in Schools"',
+            description: 'Drafted blog post "The Role of AI in Modern School Administration". Focuses on long-tail keywords. Ready for review.',
             status: 'pending',
-            tags: ['mobile', 'react-native'],
-            createdAt: new Date(now - 6 * 24 * 60 * 60 * 1000 - 7 * 60 * 60 * 1000)
+            tags: ['Content', 'Blog', 'Strategy'],
+            createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000 - 7 * 60 * 60 * 1000)
         });
-
-        // 7 days ago
-        workLogs.push({
-            developer: developer1._id,
-            website: website1._id,
-            type: 'log',
-            description: 'Added social media sharing buttons and Open Graph meta tags. Improved social media preview cards.',
-            durationMinutes: 45,
-            tags: ['social', 'frontend'],
-            createdAt: new Date(now - 7 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000)
-        });
-
-        workLogs.push({
-            developer: developer2._id,
-            website: website2._id,
-            type: 'log',
-            description: 'Implemented promotional codes and discount system. Support for percentage off, fixed amount, and BOGO deals.',
-            durationMinutes: 180,
-            tags: ['feature', 'promotions'],
-            createdAt: new Date(now - 7 * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000)
-        });
-
-        workLogs.push({
-            developer: developer3._id,
-            website: website3._id,
-            type: 'log',
-            description: 'Set up automated backup system with daily snapshots and 30-day retention. Tested restore procedures.',
-            durationMinutes: 120,
-            tags: ['devops', 'backup'],
-            createdAt: new Date(now - 7 * 24 * 60 * 60 * 1000 - 6 * 60 * 60 * 1000)
-        });
-
-        // Add 15 days of dummy data for OnCampusERP
-        const activityTypes = ['log', 'action'];
-        const developers = [developer1, developer2, developer3];
-        const tagsList = ['frontend', 'backend', 'database', 'api', 'ui/ux', 'bugfix', 'feature', 'testing'];
-
-        for (let i = 0; i < 15; i++) {
-            // Add 1-3 logs per day
-            const logsPerDay = Math.floor(Math.random() * 3) + 1;
-
-            for (let j = 0; j < logsPerDay; j++) {
-                const isAction = Math.random() > 0.7;
-                const dev = developers[Math.floor(Math.random() * developers.length)];
-
-                workLogs.push({
-                    developer: dev._id,
-                    website: websiteOnCampus._id,
-                    type: isAction ? 'action' : 'log',
-                    title: isAction ? `Approval needed for ${tagsList[Math.floor(Math.random() * tagsList.length)]} update` : undefined,
-                    description: isAction
-                        ? 'We have completed the implementation and need your sign-off to proceed to production.'
-                        : `Implemented improvements to the ${tagsList[Math.floor(Math.random() * tagsList.length)]} module. Optimized performance and fixed reported issues.`,
-                    status: isAction ? (Math.random() > 0.5 ? 'approved' : 'pending') : undefined,
-                    durationMinutes: Math.floor(Math.random() * 180) + 30,
-                    tags: [tagsList[Math.floor(Math.random() * tagsList.length)], tagsList[Math.floor(Math.random() * tagsList.length)]],
-                    createdAt: new Date(now - i * 24 * 60 * 60 * 1000 - Math.floor(Math.random() * 10) * 60 * 60 * 1000)
-                });
-            }
-        }
 
         await WorkLog.create(workLogs);
 
-        console.log(`Created ${workLogs.length} work logs and action items`);
+        console.log(`Created ${workLogs.length} high-quality work logs and action items`);
         console.log('-----------------------------------');
-        console.log('Client OnFees: info@onfees.com / 12345678');
+        console.log('Client GenAI: info@genai.com / 12345678');
+        console.log('Client OnCampus: admin@oncampuserp.com / 12345678');
         console.log('Admin: admin@example.com / 123456');
-        console.log('Client 1: client@example.com / 12345678');
-        console.log('Client 2: techstart@example.com / 12345678');
-        console.log('OnCampus: admin@oncampuserp.com / 12345678');
-        console.log('Dev 1: dev@example.com / 123456');
-        console.log('Dev 2: sarah@example.com / 123456');
-        console.log('Dev 3: mike@example.com / 123456');
         console.log('-----------------------------------');
 
         process.exit();
@@ -542,4 +251,3 @@ The Problem: The application was failing to pass your login token to the website
 };
 
 seedUsers();
-
