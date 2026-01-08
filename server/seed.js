@@ -69,6 +69,16 @@ const seedUsers = async () => {
             role: 'developer'
         });
 
+        // 4. Create OnCampusERP Client
+        const oncampusUser = await User.create({
+            name: 'OnCampus ERP',
+            email: 'admin@oncampuserp.com',
+            password: clientPassword,
+            role: 'client',
+            gstin: '29AAHCG9999K1Z5',
+            address: 'Tech Park, Bangalore'
+        });
+
         console.log('Users created');
 
         // 2. Create Websites
@@ -118,6 +128,25 @@ const seedUsers = async () => {
                 loadTime: 650
             },
             lastSeoScan: new Date()
+        });
+
+        const websiteOnCampus = await Website.create({
+            name: 'OnCampus ERP',
+            url: 'https://www.oncampuserp.com',
+            client: oncampusUser._id,
+            developers: [developer1._id, developer2._id],
+            seoHealthScore: 88,
+            seoData: {
+                title: 'OnCampus ERP - Best College Management Software',
+                description: 'Comprehensive ERP solution for educational institutions.',
+                h1: ['Transform Your Campus Management'],
+                ogImage: 'https://www.oncampuserp.com/og-image.jpg',
+                loadTime: 750
+            },
+            lastSeoScan: new Date(),
+            config: {
+                gaPropertyId: 'GA-123456789'
+            }
         });
 
         console.log('Websites created');
@@ -462,6 +491,35 @@ The Problem: The application was failing to pass your login token to the website
             createdAt: new Date(now - 7 * 24 * 60 * 60 * 1000 - 6 * 60 * 60 * 1000)
         });
 
+        // Add 15 days of dummy data for OnCampusERP
+        const activityTypes = ['log', 'action'];
+        const developers = [developer1, developer2, developer3];
+        const tagsList = ['frontend', 'backend', 'database', 'api', 'ui/ux', 'bugfix', 'feature', 'testing'];
+
+        for (let i = 0; i < 15; i++) {
+            // Add 1-3 logs per day
+            const logsPerDay = Math.floor(Math.random() * 3) + 1;
+
+            for (let j = 0; j < logsPerDay; j++) {
+                const isAction = Math.random() > 0.7;
+                const dev = developers[Math.floor(Math.random() * developers.length)];
+
+                workLogs.push({
+                    developer: dev._id,
+                    website: websiteOnCampus._id,
+                    type: isAction ? 'action' : 'log',
+                    title: isAction ? `Approval needed for ${tagsList[Math.floor(Math.random() * tagsList.length)]} update` : undefined,
+                    description: isAction
+                        ? 'We have completed the implementation and need your sign-off to proceed to production.'
+                        : `Implemented improvements to the ${tagsList[Math.floor(Math.random() * tagsList.length)]} module. Optimized performance and fixed reported issues.`,
+                    status: isAction ? (Math.random() > 0.5 ? 'approved' : 'pending') : undefined,
+                    durationMinutes: Math.floor(Math.random() * 180) + 30,
+                    tags: [tagsList[Math.floor(Math.random() * tagsList.length)], tagsList[Math.floor(Math.random() * tagsList.length)]],
+                    createdAt: new Date(now - i * 24 * 60 * 60 * 1000 - Math.floor(Math.random() * 10) * 60 * 60 * 1000)
+                });
+            }
+        }
+
         await WorkLog.create(workLogs);
 
         console.log(`Created ${workLogs.length} work logs and action items`);
@@ -470,6 +528,7 @@ The Problem: The application was failing to pass your login token to the website
         console.log('Admin: admin@example.com / 123456');
         console.log('Client 1: client@example.com / 12345678');
         console.log('Client 2: techstart@example.com / 12345678');
+        console.log('OnCampus: admin@oncampuserp.com / 12345678');
         console.log('Dev 1: dev@example.com / 123456');
         console.log('Dev 2: sarah@example.com / 123456');
         console.log('Dev 3: mike@example.com / 123456');
