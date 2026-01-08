@@ -35,6 +35,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/websites', websiteRoutes);
 app.use('/api/worklogs', workLogRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/onboarding', require('./routes/onboardingRoutes'));
 
 // Basic Route
 app.get('/', (req, res) => {

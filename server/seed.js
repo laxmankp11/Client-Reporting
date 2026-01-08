@@ -20,11 +20,11 @@ const seedUsers = async () => {
         const clientPassword = await bcrypt.hash('12345678', salt);
 
         // 1. Create Users
-        const adminOnfees = await User.create({
-            name: 'OnFees Admin',
+        const clientOnfees = await User.create({
+            name: 'OnFees Client',
             email: 'info@onfees.com',
-            password: hashedPassword,
-            role: 'admin'
+            password: clientPassword,
+            role: 'client'
         });
 
         const admin = await User.create({
@@ -466,7 +466,7 @@ The Problem: The application was failing to pass your login token to the website
 
         console.log(`Created ${workLogs.length} work logs and action items`);
         console.log('-----------------------------------');
-        console.log('Admin OnFees: info@onfees.com / 123456');
+        console.log('Client OnFees: info@onfees.com / 12345678');
         console.log('Admin: admin@example.com / 123456');
         console.log('Client 1: client@example.com / 12345678');
         console.log('Client 2: techstart@example.com / 12345678');
