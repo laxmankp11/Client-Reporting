@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 import { useAuth } from './AuthContext';
 
 const WebsiteContext = createContext();
@@ -20,7 +21,7 @@ export const WebsiteProvider = ({ children }) => {
             }
 
             try {
-                const res = await axios.get('http://127.0.0.1:5002/api/websites', {
+                const res = await axios.get(`${API_URL}/websites`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setWebsites(res.data);

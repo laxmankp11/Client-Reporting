@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { Modal, Form } from 'react-bootstrap';
 import { Plus, ThreeDotsVertical, CodeSlash, Envelope } from 'react-bootstrap-icons';
@@ -16,7 +17,7 @@ const AdminDevelopers = () => {
 
     const fetchDevelopers = async () => {
         try {
-            const { data } = await axios.get('http://127.0.0.1:5002/api/users', {
+            const { data } = await axios.get(`${API_URL}/users`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setDevelopers(data.filter(u => u.role === 'developer'));
@@ -36,12 +37,12 @@ const AdminDevelopers = () => {
                 const payload = { ...formData };
                 if (!payload.password) delete payload.password;
 
-                await axios.put(`http://127.0.0.1:5002/api/users/${editingDeveloper._id}`,
+                await axios.put(`${API_URL}/users/${editingDeveloper._id}`,
                     payload,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
             } else {
-                await axios.post('http://127.0.0.1:5002/api/users',
+                await axios.post(`${API_URL}/users`,
                     { ...formData, role: 'developer' },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );

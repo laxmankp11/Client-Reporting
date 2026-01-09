@@ -58,7 +58,11 @@ app.get('/', (req, res) => {
     res.send('API is running...');
 });
 
-// Start Server
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// Start Server only if running directly (not imported as a module)
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
+
+module.exports = app;

@@ -1,6 +1,7 @@
 // API Configuration
 // Default to production URL to ensure live deployments work out of the box.
-let API_URL = 'https://client-reporting.onrender.com/api';
+// Default to relative URL for Vercel Monorepo deployment
+let API_URL = '/api';
 
 // Only use localhost if explicitly running on localhost
 // Only use localhost if explicitly running on localhost

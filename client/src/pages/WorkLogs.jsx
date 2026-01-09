@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { useWebsite } from '../context/WebsiteContext';
 import { Container, Button, Modal, Form, Row, Col, Spinner } from 'react-bootstrap';
-import { Plus, Star, StarFill, CheckCircleFill, XCircleFill, Clock } from 'react-bootstrap-icons';
+import { Plus, Star, StarFill, CheckCircleFill, XCircleFill, Clock, FileText, Lightbulb } from 'react-bootstrap-icons';
 
 const WorkLogs = () => {
     const [logs, setLogs] = useState([]);
@@ -52,7 +53,7 @@ const WorkLogs = () => {
             const typeQuery = filterType !== 'all' ? `&type=${filterType}` : '';
             const websiteQuery = selectedWebsiteId ? `&websiteId=${selectedWebsiteId}` : '';
 
-            const logsRes = await axios.get(`http://127.0.0.1:5002/api/worklogs?page=${pageNum}&limit=${limit}${starQuery}${typeQuery}${websiteQuery}`, {
+            const logsRes = await axios.get(`${API_URL}/worklogs?page=${pageNum}&limit=${limit}${starQuery}${typeQuery}${websiteQuery}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -65,7 +66,7 @@ const WorkLogs = () => {
             setHasMore(logsRes.data.length === limit);
 
             if (user.role === 'developer' || user.role === 'admin') {
-                const webRes = await axios.get('http://127.0.0.1:5002/api/websites', {
+                const webRes = await axios.get(`${API_URL}/websites`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setWebsites(webRes.data);
@@ -98,7 +99,7 @@ const WorkLogs = () => {
                 tags: formData.tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
             };
 
-            await axios.post('http://127.0.0.1:5002/api/worklogs', payload, {
+            await axios.post(`${API_URL}/worklogs`, payload, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -116,7 +117,7 @@ const WorkLogs = () => {
             const newStatus = !log.isStarred;
             setLogs(prevLogs => prevLogs.map(l => l._id === log._id ? { ...l, isStarred: newStatus } : l));
 
-            await axios.put(`http://127.0.0.1:5002/api/worklogs/${log._id}`, { isStarred: newStatus }, {
+            await axios.put(`${API_URL}/worklogs/${log._id}`, { isStarred: newStatus }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
         } catch (error) {
@@ -132,7 +133,7 @@ const WorkLogs = () => {
         }
 
         try {
-            await axios.put(`http://127.0.0.1:5002/api/worklogs/${feedbackData.logId}`, {
+            await axios.put(`${API_URL}/worklogs/${feedbackData.logId}`, {
                 status: feedbackData.action,
                 clientResponse: feedbackData.comment
             }, {
@@ -247,7 +248,7 @@ const WorkLogs = () => {
 
                         {/* Filter Tabs */}
                         <div className="d-flex gap-2" style={{ flexWrap: 'wrap' }}>
-                            {['all', 'log', 'action'].map(type => (
+                            {['all', 'log', 'action', 'report', 'observation'].map(type => (
                                 <button
                                     key={type}
                                     onClick={() => setFilterType(type)}
@@ -263,7 +264,7 @@ const WorkLogs = () => {
                                         transition: 'all 0.2s'
                                     }}
                                 >
-                                    {type === 'all' ? 'All Activity' : type === 'log' ? 'Work Logs' : 'Action Items'}
+                                    {type === 'all' ? 'All Activity' : type === 'log' ? 'Work Logs' : type === 'action' ? 'Action Items' : type === 'report' ? 'Reports' : 'Observations'}
                                 </button>
                             ))}
                         </div>
@@ -317,6 +318,10 @@ const WorkLogs = () => {
                                             } else if (item.status === 'rejected') {
                                                 statusConfig = { color: '#ef4444', bg: '#fee2e2', label: 'Rejected', icon: <XCircleFill size={12} /> };
                                             }
+                                        } else if (item.type === 'report') {
+                                            statusConfig = { color: '#8b5cf6', bg: '#f3e8ff', label: 'Report', icon: <FileText size={12} /> };
+                                        } else if (item.type === 'observation') {
+                                            statusConfig = { color: '#d97706', bg: '#fef3c7', label: 'Observation', icon: <Lightbulb size={12} /> };
                                         }
 
                                         const description = isAction ? item.description : item.description;
@@ -351,238 +356,212 @@ const WorkLogs = () => {
                                                     e.currentTarget.style.transform = 'translateY(0)';
                                                 }}
                                             >
-                                                <div className="d-flex gap-3">
-                                                    {/* Avatar */}
-                                                    <div
-                                                        style={{
-                                                            width: '36px',
-                                                            height: '36px',
-                                                            borderRadius: '50%',
-                                                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                                            color: 'white',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            fontSize: '0.875rem',
-                                                            fontWeight: '600',
-                                                            flexShrink: 0,
-                                                            boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
-                                                        }}
-                                                    >
-                                                        {item.developer?.name?.[0] || 'D'}
+                                                {/* Content */}
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    {/* Header */}
+                                                    <div className="d-flex align-items-center gap-2 mb-2" style={{ flexWrap: 'wrap' }}>
+                                                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '500' }}>
+                                                            {getRelativeTime(item.createdAt)}
+                                                        </span>
+                                                        <span
+                                                            style={{
+                                                                background: statusConfig.bg,
+                                                                color: statusConfig.color,
+                                                                padding: '3px 10px',
+                                                                borderRadius: '6px',
+                                                                fontSize: '0.688rem',
+                                                                fontWeight: '700',
+                                                                textTransform: 'uppercase',
+                                                                letterSpacing: '0.5px',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '4px',
+                                                                border: `1px solid ${statusConfig.color}20`
+                                                            }}
+                                                        >
+                                                            {statusConfig.icon}
+                                                            {statusConfig.label}
+                                                        </span>
                                                     </div>
 
-                                                    {/* Content */}
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                        {/* Header */}
-                                                        <div className="d-flex align-items-center gap-2 mb-2" style={{ flexWrap: 'wrap' }}>
-                                                            <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#0f172a' }}>
-                                                                {item.developer?.name}
-                                                            </span>
-                                                            <span style={{ color: '#cbd5e1', fontSize: '0.75rem' }}>·</span>
-                                                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '500' }}>
-                                                                {getRelativeTime(item.createdAt)}
-                                                            </span>
-                                                            <span
-                                                                style={{
-                                                                    background: statusConfig.bg,
-                                                                    color: statusConfig.color,
-                                                                    padding: '3px 10px',
-                                                                    borderRadius: '6px',
-                                                                    fontSize: '0.688rem',
-                                                                    fontWeight: '700',
-                                                                    textTransform: 'uppercase',
-                                                                    letterSpacing: '0.5px',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: '4px',
-                                                                    border: `1px solid ${statusConfig.color}20`
-                                                                }}
-                                                            >
-                                                                {statusConfig.icon}
-                                                                {statusConfig.label}
-                                                            </span>
+                                                    {/* Title (for actions) */}
+                                                    {isAction && item.title && (
+                                                        <div style={{
+                                                            fontSize: '0.938rem',
+                                                            fontWeight: '600',
+                                                            color: '#1e293b',
+                                                            marginBottom: '6px',
+                                                            lineHeight: '1.4'
+                                                        }}>
+                                                            {item.title}
                                                         </div>
+                                                    )}
 
-                                                        {/* Title (for actions) */}
-                                                        {isAction && item.title && (
-                                                            <div style={{
-                                                                fontSize: '0.938rem',
+                                                    {/* Description */}
+                                                    {description && (
+                                                        <div style={{
+                                                            fontSize: '0.875rem',
+                                                            color: '#475569',
+                                                            lineHeight: '1.6',
+                                                            whiteSpace: 'pre-wrap',
+                                                            marginBottom: shouldTruncate ? '8px' : '10px'
+                                                        }}>
+                                                            {displayText}
+                                                        </div>
+                                                    )}
+
+                                                    {shouldTruncate && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setExpandedItems(prev => ({ ...prev, [item._id]: !prev[item._id] }));
+                                                            }}
+                                                            style={{
+                                                                background: 'none',
+                                                                border: 'none',
+                                                                color: '#3b82f6',
+                                                                fontSize: '0.813rem',
                                                                 fontWeight: '600',
-                                                                color: '#1e293b',
-                                                                marginBottom: '6px',
-                                                                lineHeight: '1.4'
-                                                            }}>
-                                                                {item.title}
-                                                            </div>
-                                                        )}
+                                                                cursor: 'pointer',
+                                                                padding: 0,
+                                                                marginBottom: '10px',
+                                                                textDecoration: 'none'
+                                                            }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                                                        >
+                                                            {isExpanded ? 'Show less' : 'Read more'}
+                                                        </button>
+                                                    )}
 
-                                                        {/* Description */}
-                                                        {description && (
+                                                    {/* Client Response */}
+                                                    {item.clientResponse && (
+                                                        <div style={{
+                                                            background: 'linear-gradient(to right, #f0f9ff, #f8fafc)',
+                                                            padding: '10px 14px',
+                                                            borderRadius: '8px',
+                                                            borderLeft: '3px solid #3b82f6',
+                                                            marginBottom: '10px',
+                                                            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+                                                        }}>
                                                             <div style={{
-                                                                fontSize: '0.875rem',
+                                                                fontSize: '0.688rem',
+                                                                fontWeight: '700',
                                                                 color: '#475569',
-                                                                lineHeight: '1.6',
-                                                                whiteSpace: 'pre-wrap',
-                                                                marginBottom: shouldTruncate ? '8px' : '10px'
+                                                                textTransform: 'uppercase',
+                                                                letterSpacing: '0.5px',
+                                                                marginBottom: '4px'
                                                             }}>
-                                                                {displayText}
+                                                                Client Response
                                                             </div>
-                                                        )}
+                                                            <div style={{ fontSize: '0.813rem', color: '#334155', lineHeight: '1.5' }}>
+                                                                {item.clientResponse}
+                                                            </div>
+                                                        </div>
+                                                    )}
 
-                                                        {shouldTruncate && (
+                                                    {/* Action Buttons */}
+                                                    {isAction && user.role === 'client' && item.status === 'pending' && (
+                                                        <div className="d-flex gap-2 mb-2">
                                                             <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setExpandedItems(prev => ({ ...prev, [item._id]: !prev[item._id] }));
-                                                                }}
+                                                                onClick={() => handleActionClick(item._id, 'rejected')}
                                                                 style={{
-                                                                    background: 'none',
-                                                                    border: 'none',
-                                                                    color: '#3b82f6',
+                                                                    padding: '8px 16px',
+                                                                    borderRadius: '8px',
+                                                                    border: '1.5px solid #fca5a5',
+                                                                    background: 'white',
+                                                                    color: '#dc2626',
                                                                     fontSize: '0.813rem',
                                                                     fontWeight: '600',
                                                                     cursor: 'pointer',
-                                                                    padding: 0,
-                                                                    marginBottom: '10px',
-                                                                    textDecoration: 'none'
-                                                                }}
-                                                                onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                                                                onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
-                                                            >
-                                                                {isExpanded ? 'Show less' : 'Read more'}
-                                                            </button>
-                                                        )}
-
-                                                        {/* Client Response */}
-                                                        {item.clientResponse && (
-                                                            <div style={{
-                                                                background: 'linear-gradient(to right, #f0f9ff, #f8fafc)',
-                                                                padding: '10px 14px',
-                                                                borderRadius: '8px',
-                                                                borderLeft: '3px solid #3b82f6',
-                                                                marginBottom: '10px',
-                                                                boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
-                                                            }}>
-                                                                <div style={{
-                                                                    fontSize: '0.688rem',
-                                                                    fontWeight: '700',
-                                                                    color: '#475569',
-                                                                    textTransform: 'uppercase',
-                                                                    letterSpacing: '0.5px',
-                                                                    marginBottom: '4px'
-                                                                }}>
-                                                                    Client Response
-                                                                </div>
-                                                                <div style={{ fontSize: '0.813rem', color: '#334155', lineHeight: '1.5' }}>
-                                                                    {item.clientResponse}
-                                                                </div>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Action Buttons */}
-                                                        {isAction && user.role === 'client' && item.status === 'pending' && (
-                                                            <div className="d-flex gap-2 mb-2">
-                                                                <button
-                                                                    onClick={() => handleActionClick(item._id, 'rejected')}
-                                                                    style={{
-                                                                        padding: '8px 16px',
-                                                                        borderRadius: '8px',
-                                                                        border: '1.5px solid #fca5a5',
-                                                                        background: 'white',
-                                                                        color: '#dc2626',
-                                                                        fontSize: '0.813rem',
-                                                                        fontWeight: '600',
-                                                                        cursor: 'pointer',
-                                                                        transition: 'all 0.2s'
-                                                                    }}
-                                                                    onMouseEnter={(e) => {
-                                                                        e.currentTarget.style.background = '#fee2e2';
-                                                                        e.currentTarget.style.borderColor = '#dc2626';
-                                                                    }}
-                                                                    onMouseLeave={(e) => {
-                                                                        e.currentTarget.style.background = 'white';
-                                                                        e.currentTarget.style.borderColor = '#fca5a5';
-                                                                    }}
-                                                                >
-                                                                    Reject
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleActionClick(item._id, 'approved')}
-                                                                    style={{
-                                                                        padding: '8px 16px',
-                                                                        borderRadius: '8px',
-                                                                        border: 'none',
-                                                                        background: '#10b981',
-                                                                        color: 'white',
-                                                                        fontSize: '0.813rem',
-                                                                        fontWeight: '600',
-                                                                        cursor: 'pointer',
-                                                                        transition: 'all 0.2s',
-                                                                        boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
-                                                                    }}
-                                                                    onMouseEnter={(e) => {
-                                                                        e.currentTarget.style.background = '#059669';
-                                                                        e.currentTarget.style.transform = 'translateY(-1px)';
-                                                                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.4)';
-                                                                    }}
-                                                                    onMouseLeave={(e) => {
-                                                                        e.currentTarget.style.background = '#10b981';
-                                                                        e.currentTarget.style.transform = 'translateY(0)';
-                                                                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.3)';
-                                                                    }}
-                                                                >
-                                                                    Approve
-                                                                </button>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Footer */}
-                                                        <div className="d-flex align-items-center justify-content-between" style={{ marginTop: '2px' }}>
-                                                            <div className="d-flex gap-2 flex-wrap">
-                                                                {item.tags && item.tags.length > 0 && item.tags.map((tag, idx) => (
-                                                                    <span
-                                                                        key={idx}
-                                                                        style={{
-                                                                            background: '#f1f5f9',
-                                                                            color: '#64748b',
-                                                                            padding: '3px 10px',
-                                                                            borderRadius: '6px',
-                                                                            fontSize: '0.688rem',
-                                                                            fontWeight: '600',
-                                                                            border: '1px solid #e2e8f0'
-                                                                        }}
-                                                                    >
-                                                                        #{tag}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                            <button
-                                                                onClick={(e) => handleStarToggle(e, item)}
-                                                                style={{
-                                                                    background: 'none',
-                                                                    border: 'none',
-                                                                    color: item.isStarred ? '#fbbf24' : '#cbd5e1',
-                                                                    cursor: 'pointer',
-                                                                    padding: '6px',
-                                                                    borderRadius: '6px',
-                                                                    transition: 'all 0.2s',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center'
+                                                                    transition: 'all 0.2s'
                                                                 }}
                                                                 onMouseEnter={(e) => {
-                                                                    e.currentTarget.style.background = '#fef3c7';
-                                                                    if (!item.isStarred) e.currentTarget.style.color = '#fbbf24';
+                                                                    e.currentTarget.style.background = '#fee2e2';
+                                                                    e.currentTarget.style.borderColor = '#dc2626';
                                                                 }}
                                                                 onMouseLeave={(e) => {
-                                                                    e.currentTarget.style.background = 'none';
-                                                                    if (!item.isStarred) e.currentTarget.style.color = '#cbd5e1';
+                                                                    e.currentTarget.style.background = 'white';
+                                                                    e.currentTarget.style.borderColor = '#fca5a5';
                                                                 }}
                                                             >
-                                                                {item.isStarred ? <StarFill size={18} /> : <Star size={18} />}
+                                                                Reject
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleActionClick(item._id, 'approved')}
+                                                                style={{
+                                                                    padding: '8px 16px',
+                                                                    borderRadius: '8px',
+                                                                    border: 'none',
+                                                                    background: '#10b981',
+                                                                    color: 'white',
+                                                                    fontSize: '0.813rem',
+                                                                    fontWeight: '600',
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.2s',
+                                                                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                                                                }}
+                                                                onMouseEnter={(e) => {
+                                                                    e.currentTarget.style.background = '#059669';
+                                                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.4)';
+                                                                }}
+                                                                onMouseLeave={(e) => {
+                                                                    e.currentTarget.style.background = '#10b981';
+                                                                    e.currentTarget.style.transform = 'translateY(0)';
+                                                                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.3)';
+                                                                }}
+                                                            >
+                                                                Approve
                                                             </button>
                                                         </div>
+                                                    )}
+
+                                                    {/* Footer */}
+                                                    <div className="d-flex align-items-center justify-content-between" style={{ marginTop: '2px' }}>
+                                                        <div className="d-flex gap-2 flex-wrap">
+                                                            {item.tags && item.tags.length > 0 && item.tags.map((tag, idx) => (
+                                                                <span
+                                                                    key={idx}
+                                                                    style={{
+                                                                        background: '#f1f5f9',
+                                                                        color: '#64748b',
+                                                                        padding: '3px 10px',
+                                                                        borderRadius: '6px',
+                                                                        fontSize: '0.688rem',
+                                                                        fontWeight: '600',
+                                                                        border: '1px solid #e2e8f0'
+                                                                    }}
+                                                                >
+                                                                    #{tag}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                        <button
+                                                            onClick={(e) => handleStarToggle(e, item)}
+                                                            style={{
+                                                                background: 'none',
+                                                                border: 'none',
+                                                                color: item.isStarred ? '#fbbf24' : '#cbd5e1',
+                                                                cursor: 'pointer',
+                                                                padding: '6px',
+                                                                borderRadius: '6px',
+                                                                transition: 'all 0.2s',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center'
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                e.currentTarget.style.background = '#fef3c7';
+                                                                if (!item.isStarred) e.currentTarget.style.color = '#fbbf24';
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.currentTarget.style.background = 'none';
+                                                                if (!item.isStarred) e.currentTarget.style.color = '#cbd5e1';
+                                                            }}
+                                                        >
+                                                            {item.isStarred ? <StarFill size={18} /> : <Star size={18} />}
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -616,8 +595,8 @@ const WorkLogs = () => {
                 </Modal.Header>
                 <Form onSubmit={handleSubmit}>
                     <Modal.Body>
-                        <div className="d-flex gap-2 mb-3 p-1" style={{ background: '#f1f5f9', borderRadius: '8px' }}>
-                            {['log', 'action'].map(type => (
+                        <div className="d-flex gap-2 mb-3 p-1" style={{ background: '#f1f5f9', borderRadius: '8px', overflowX: 'auto' }}>
+                            {['log', 'action', 'report', 'observation'].map(type => (
                                 <button
                                     key={type}
                                     type="button"
@@ -635,7 +614,7 @@ const WorkLogs = () => {
                                         boxShadow: formData.type === type ? '0 1px 2px rgba(0,0,0,0.05)' : 'none'
                                     }}
                                 >
-                                    {type === 'log' ? 'Work Log' : 'Action Item'}
+                                    {type === 'log' ? 'Work Log' : type === 'action' ? 'Action Item' : type === 'report' ? 'Report' : 'Observation'}
                                 </button>
                             ))}
                         </div>
@@ -770,7 +749,7 @@ const WorkLogs = () => {
                     </Button>
                 </Modal.Footer>
             </Modal>
-        </Container>
+        </Container >
     );
 };
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { Modal, Form } from 'react-bootstrap';
 import { Plus, ThreeDotsVertical, Envelope, Globe } from 'react-bootstrap-icons';
@@ -18,8 +19,8 @@ const AdminClients = () => {
     const fetchData = async () => {
         try {
             const [usersRes, websitesRes] = await Promise.all([
-                axios.get('http://127.0.0.1:5002/api/users', { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get('http://127.0.0.1:5002/api/websites', { headers: { Authorization: `Bearer ${token}` } })
+                axios.get(`${API_URL}/users`, { headers: { Authorization: `Bearer ${token}` } }),
+                axios.get(`${API_URL}/websites`, { headers: { Authorization: `Bearer ${token}` } })
             ]);
 
             setClients(usersRes.data.filter(u => u.role === 'client'));
@@ -40,12 +41,12 @@ const AdminClients = () => {
                 const payload = { ...formData };
                 if (!payload.password) delete payload.password;
 
-                await axios.put(`http://127.0.0.1:5002/api/users/${editingClient._id}`,
+                await axios.put(`${API_URL}/users/${editingClient._id}`,
                     payload,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
             } else {
-                await axios.post('http://127.0.0.1:5002/api/users',
+                await axios.post(`${API_URL}/users`,
                     { ...formData, role: 'client' },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );

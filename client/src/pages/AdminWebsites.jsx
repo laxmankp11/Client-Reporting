@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 import Select from 'react-select';
 import { useAuth } from '../context/AuthContext';
 import { Modal, Form, Row, Col } from 'react-bootstrap';
@@ -28,8 +29,8 @@ const AdminWebsites = () => {
     const fetchData = async () => {
         try {
             const [webRes, userRes] = await Promise.all([
-                axios.get('http://127.0.0.1:5002/api/websites', { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get('http://127.0.0.1:5002/api/users', { headers: { Authorization: `Bearer ${token}` } })
+                axios.get(`${API_URL}/websites`, { headers: { Authorization: `Bearer ${token}` } }),
+                axios.get(`${API_URL}/users`, { headers: { Authorization: `Bearer ${token}` } })
             ]);
 
             setWebsites(webRes.data);
@@ -54,11 +55,11 @@ const AdminWebsites = () => {
             };
 
             if (editingWebsite) {
-                await axios.put(`http://127.0.0.1:5002/api/websites/${editingWebsite._id}`, payload, {
+                await axios.put(`${API_URL}/websites/${editingWebsite._id}`, payload, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
             } else {
-                await axios.post('http://127.0.0.1:5002/api/websites', payload, {
+                await axios.post(`${API_URL}/websites`, payload, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
             }
@@ -89,7 +90,7 @@ const AdminWebsites = () => {
         setScanResult(null);
         setShowScanModal(true);
         try {
-            const res = await axios.post(`http://127.0.0.1:5002/api/websites/${websiteId}/scan`, {}, {
+            const res = await axios.post(`${API_URL}/websites/${websiteId}/scan`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setScanResult(res.data);
@@ -143,9 +144,9 @@ const AdminWebsites = () => {
                             <div className="flex justify-between items-center mb-2">
                                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">SEO Health</span>
                                 <span className={`px-2 py-1 rounded-lg text-xs font-bold border ${!site.seoHealthScore ? 'bg-slate-100 text-slate-500 border-slate-200' :
-                                        site.seoHealthScore > 80 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                            site.seoHealthScore > 50 ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                                'bg-rose-50 text-rose-600 border-rose-100'
+                                    site.seoHealthScore > 80 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                        site.seoHealthScore > 50 ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                            'bg-rose-50 text-rose-600 border-rose-100'
                                     }`}>
                                     {site.seoHealthScore || 0}%
                                 </span>
@@ -153,9 +154,9 @@ const AdminWebsites = () => {
                             <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
                                 <div
                                     className={`h-full rounded-full transition-all duration-1000 ${!site.seoHealthScore ? 'bg-slate-300' :
-                                            site.seoHealthScore > 80 ? 'bg-emerald-500' :
-                                                site.seoHealthScore > 50 ? 'bg-amber-500' :
-                                                    'bg-rose-500'
+                                        site.seoHealthScore > 80 ? 'bg-emerald-500' :
+                                            site.seoHealthScore > 50 ? 'bg-amber-500' :
+                                                'bg-rose-500'
                                         }`}
                                     style={{ width: `${site.seoHealthScore || 0}%` }}
                                 />
@@ -228,8 +229,8 @@ const AdminWebsites = () => {
                         <div className="animate-fade-in-up">
                             <div className="text-center mb-8">
                                 <div className={`inline-flex items-center justify-center w-32 h-32 rounded-full border-8 mb-4 ${scanResult.seoHealthScore > 80 ? 'border-emerald-100 bg-emerald-50 text-emerald-600' :
-                                        scanResult.seoHealthScore > 50 ? 'border-amber-100 bg-amber-50 text-amber-600' :
-                                            'border-rose-100 bg-rose-50 text-rose-600'
+                                    scanResult.seoHealthScore > 50 ? 'border-amber-100 bg-amber-50 text-amber-600' :
+                                        'border-rose-100 bg-rose-50 text-rose-600'
                                     }`}>
                                     <span className="text-5xl font-bold">{scanResult.seoHealthScore}%</span>
                                 </div>

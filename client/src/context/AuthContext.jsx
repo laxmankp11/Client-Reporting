@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 const AuthContext = createContext();
 
@@ -37,7 +38,7 @@ export const AuthProvider = ({ children }) => {
         try {
             // Use full URL for now since execution env might not proxy correctly yet
             // In production use relative path or configured base URL
-            const { data } = await axios.post('http://127.0.0.1:5002/api/auth/login', { email, password });
+            const { data } = await axios.post(`${API_URL}/auth/login`, { email, password });
 
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data));

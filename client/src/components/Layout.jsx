@@ -43,7 +43,6 @@ const Sidebar = ({ isOpen, toggle }) => {
             <div className="flex-1 overflow-y-auto py-6 px-4 custom-scrollbar">
                 <div className="px-4 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Menu</div>
                 <Nav className="flex-column gap-1">
-                    <NavItem to="/" icon={<Speedometer2 />} label="Dashboard" active={isActive('/')} />
 
                     {user?.role === 'admin' && (
                         <>

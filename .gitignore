@@ -7,3 +7,10 @@ build
 *.log
 .vercel
 .render
+.env*.local
+
+# Local Data & Dumps
+database_dump/
+*.zip
+*.doc
+*.docx
