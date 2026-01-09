@@ -11,6 +11,13 @@ const workLogSchema = new mongoose.Schema({
     website: { type: mongoose.Schema.Types.ObjectId, ref: 'Website', required: true },
     developer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     tags: [{ type: String }],
+    attachments: [{ type: String }], // Array of file paths/URLs
+    questions: [{
+        text: { type: String, required: true },
+        type: { type: String, enum: ['approval', 'multiple_choice', 'text'], required: true },
+        options: [String], // For multiple_choice
+        response: mongoose.Schema.Types.Mixed // String for text/approval, Array for multiple_choice
+    }],
     durationMinutes: { type: Number, default: 0 }
 }, { timestamps: true });
 

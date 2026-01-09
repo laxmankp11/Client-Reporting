@@ -7,6 +7,7 @@ const userRoutes = require('./routes/userRoutes');
 const websiteRoutes = require('./routes/websiteRoutes');
 const workLogRoutes = require('./routes/workLogRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+const competitorRoutes = require('./routes/competitorRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5002;
@@ -16,7 +17,11 @@ console.log('Attempting to start on port', PORT);
 connectDB();
 
 // Init Cron Jobs
+// Init Cron Jobs
 require('./cron')();
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
 
 // Middleware
 app.use(cors({
@@ -51,6 +56,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/websites', websiteRoutes);
 app.use('/api/worklogs', workLogRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/competitors', competitorRoutes);
 app.use('/api/onboarding', require('./routes/onboardingRoutes'));
 
 // Basic Route

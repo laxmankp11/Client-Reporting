@@ -18,6 +18,13 @@ const websiteSchema = new mongoose.Schema({
     },
     lastSeoScan: { type: Date },
     config: { type: Object, default: {} },
+    hostingDetails: {
+        provider: String,
+        domain: String,
+        ftpHost: String,
+        ftpUser: String,
+        ftpPassword: { type: String, select: true } // Storing plain for now as requested
+    }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Website', websiteSchema);

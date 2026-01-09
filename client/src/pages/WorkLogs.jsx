@@ -4,7 +4,7 @@ import API_URL from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { useWebsite } from '../context/WebsiteContext';
 import { Container, Button, Modal, Form, Row, Col, Spinner } from 'react-bootstrap';
-import { Plus, Star, StarFill, CheckCircleFill, XCircleFill, Clock, FileText, Lightbulb } from 'react-bootstrap-icons';
+import { Plus, Star, StarFill, CheckCircleFill, XCircleFill, Clock, FileText, Lightbulb, Trash, Paperclip } from 'react-bootstrap-icons';
 
 const WorkLogs = () => {
     const [logs, setLogs] = useState([]);
@@ -20,7 +20,7 @@ const WorkLogs = () => {
     const [feedbackData, setFeedbackData] = useState({ logId: null, action: null, comment: '' });
     const observer = useRef();
 
-    const { selectedWebsiteId } = useWebsite();
+    const { selectedWebsiteId, handleWebsiteSelect } = useWebsite();
 
     const [formData, setFormData] = useState({
         websiteId: '',
@@ -30,6 +30,7 @@ const WorkLogs = () => {
         durationMinutes: 60,
         tags: ''
     });
+    const [questions, setQuestions] = useState([]);
 
     const { user } = useAuth();
     const token = localStorage.getItem('token');
@@ -91,23 +92,55 @@ const WorkLogs = () => {
         }
     }, [page]);
 
+    const [selectedFiles, setSelectedFiles] = useState([]);
+
+    const handleFileChange = (e) => {
+        setSelectedFiles(Array.from(e.target.files));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const payload = {
-                ...formData,
-                tags: formData.tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
-            };
+            const formDataToSend = new FormData();
+            formDataToSend.append('websiteId', formData.websiteId);
+            formDataToSend.append('type', formData.type);
+            formDataToSend.append('description', formData.description);
+            formDataToSend.append('durationMinutes', formData.durationMinutes);
+            formDataToSend.append('tags', formData.tags); // server handles string
+            if (formData.title) formDataToSend.append('title', formData.title);
 
-            await axios.post(`${API_URL}/worklogs`, payload, {
-                headers: { Authorization: `Bearer ${token}` }
+            selectedFiles.forEach(file => {
+                formDataToSend.append('attachments', file);
             });
 
+            if (questions.length > 0) {
+                formDataToSend.append('questions', JSON.stringify(questions));
+            }
+
+            const res = await axios.post(`${API_URL}/worklogs`, formDataToSend, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            const payload = res.data; // use response data which contains the created object
+
             setShowModal(false);
-            setFormData({ websiteId: '', type: 'log', title: '', description: '', durationMinutes: 60, tags: '' });
-            fetchData(1, true);
+            setFormData({ clientId: '', websiteId: '', type: 'log', title: '', description: '', durationMinutes: 60, tags: '' });
+            setQuestions([]);
+            setSelectedFiles([]);
+
+            // If the log was added for a different website than currently selected, switch to it
+            if (payload.websiteId && payload.websiteId !== selectedWebsiteId) {
+                handleWebsiteSelect(payload.websiteId);
+                // useEffect will trigger fetchData
+            } else {
+                fetchData(1, true);
+            }
         } catch (error) {
-            alert('Failed to log work');
+            console.error(error);
+            const message = error.response?.data?.message || 'Failed to log work';
+            alert(message);
         }
     };
 
@@ -152,6 +185,42 @@ const WorkLogs = () => {
         setShowFeedbackModal(true);
     };
 
+    const handleQuestionResponse = async (logId, questionIndex, response) => {
+        const log = logs.find(l => l._id === logId);
+        if (!log) return;
+
+        const newQuestions = [...log.questions];
+        newQuestions[questionIndex].response = response;
+
+        // Optimistic UI Update
+        setLogs(prevLogs => prevLogs.map(l => l._id === logId ? { ...l, questions: newQuestions } : l));
+
+        try {
+            await axios.put(`${API_URL}/worklogs/${logId}`, {
+                questions: newQuestions
+            }, { headers: { Authorization: `Bearer ${token}` } });
+        } catch (error) {
+            console.error('Failed to save response');
+            // Revert on failure (could retrieve original from server)
+            fetchData(page, false);
+        }
+    };
+
+    const handleDelete = async (e, logId) => {
+        e.stopPropagation();
+        if (!window.confirm('Are you sure you want to delete this activity?')) return;
+
+        try {
+            await axios.delete(`${API_URL}/worklogs/${logId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchData(1, true); // Refresh list
+        } catch (error) {
+            console.error('Failed to delete log', error);
+            alert('Failed to delete activity');
+        }
+    };
+
     const getRelativeTime = (date) => {
         const now = new Date();
         const then = new Date(date);
@@ -192,6 +261,49 @@ const WorkLogs = () => {
     };
 
     const groupedLogs = groupByDate(logs);
+
+    // Question Builder Helpers
+    const handleAddQuestion = () => {
+        setQuestions([...questions, { text: '', type: 'approval', options: ['Yes', 'No'] }]);
+    };
+
+    const handleUpdateQuestion = (index, field, value) => {
+        const newQuestions = [...questions];
+        newQuestions[index][field] = value;
+
+        // If switching to approval, ensure 2 options
+        if (field === 'type' && value === 'approval') {
+            // If already has options, take first 2 or pad to 2
+            let currentOpts = newQuestions[index].options || [];
+            if (currentOpts.length > 2) currentOpts = currentOpts.slice(0, 2);
+            while (currentOpts.length < 2) currentOpts.push(`Option ${currentOpts.length + 1}`);
+            newQuestions[index].options = currentOpts;
+        }
+
+        setQuestions(newQuestions);
+    };
+
+    const handleRemoveQuestion = (index) => {
+        setQuestions(questions.filter((_, i) => i !== index));
+    };
+
+    const handleOptionChange = (qIndex, oIndex, value) => {
+        const newQuestions = [...questions];
+        newQuestions[qIndex].options[oIndex] = value;
+        setQuestions(newQuestions);
+    };
+
+    const handleAddOption = (qIndex) => {
+        const newQuestions = [...questions];
+        newQuestions[qIndex].options.push(`Option ${newQuestions[qIndex].options.length + 1}`);
+        setQuestions(newQuestions);
+    };
+
+    const handleRemoveOption = (qIndex, oIndex) => {
+        const newQuestions = [...questions];
+        newQuestions[qIndex].options = newQuestions[qIndex].options.filter((_, i) => i !== oIndex);
+        setQuestions(newQuestions);
+    };
 
     return (
         <Container fluid className="px-0" style={{ background: '#f8fafc', minHeight: '100vh', padding: '32px 24px' }}>
@@ -410,6 +522,60 @@ const WorkLogs = () => {
                                                         </div>
                                                     )}
 
+                                                    {/* Attachments */}
+                                                    {item.attachments && item.attachments.length > 0 && (
+                                                        <div className="d-flex flex-wrap gap-2 mb-3">
+                                                            {item.attachments.map((path, idx) => {
+                                                                const isImage = path.match(/\.(jpeg|jpg|gif|png)$/) != null;
+                                                                const fullUrl = `${API_URL.replace('/api', '')}${path}`;
+
+                                                                if (isImage) {
+                                                                    return (
+                                                                        <a key={idx} href={fullUrl} target="_blank" rel="noopener noreferrer" className="d-block">
+                                                                            <img
+                                                                                src={fullUrl}
+                                                                                alt="Attachment"
+                                                                                style={{
+                                                                                    maxWidth: '100%',
+                                                                                    maxHeight: '200px',
+                                                                                    borderRadius: '8px',
+                                                                                    border: '1px solid #e2e8f0'
+                                                                                }}
+                                                                            />
+                                                                        </a>
+                                                                    );
+                                                                } else {
+                                                                    return (
+                                                                        <a
+                                                                            key={idx}
+                                                                            href={fullUrl}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            style={{
+                                                                                display: 'flex',
+                                                                                alignItems: 'center',
+                                                                                gap: '6px',
+                                                                                padding: '8px 12px',
+                                                                                background: '#f8fafc',
+                                                                                border: '1px solid #e2e8f0',
+                                                                                borderRadius: '8px',
+                                                                                color: '#475569',
+                                                                                textDecoration: 'none',
+                                                                                fontSize: '0.875rem',
+                                                                                fontWeight: '500'
+                                                                            }}
+                                                                            onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                                                                            onMouseLeave={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                                                        >
+                                                                            <Paperclip size={14} />
+                                                                            Download Attachment {idx + 1}
+                                                                        </a>
+                                                                    );
+                                                                }
+                                                            })}
+                                                        </div>
+                                                    )}
+
                                                     {shouldTruncate && (
                                                         <button
                                                             onClick={(e) => {
@@ -432,6 +598,113 @@ const WorkLogs = () => {
                                                         >
                                                             {isExpanded ? 'Show less' : 'Read more'}
                                                         </button>
+                                                    )}
+
+                                                    {/* Questions Display */}
+                                                    {item.questions && item.questions.length > 0 && (
+                                                        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+                                                            <div style={{ fontSize: '0.688rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '12px' }}>
+                                                                Questions & Responses
+                                                            </div>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                                {item.questions.map((q, qIdx) => {
+                                                                    const canRespond = user.role === 'client'; // Logic: Only clients respond?
+                                                                    // Or assume Admin can also edit responses on behalf of client? For now, let's allow client.
+
+                                                                    return (
+                                                                        <div key={qIdx} style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                                                            <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '8px' }}>
+                                                                                {q.text}
+                                                                            </div>
+
+                                                                            {q.type === 'approval' && (
+                                                                                <div className="d-flex gap-2 flex-wrap">
+                                                                                    {q.options.map((opt, i) => {
+                                                                                        const isSelected = q.response === opt;
+                                                                                        // Smart coloring: First option green, second red, others neutral
+                                                                                        // Or just neutral unless selected.
+                                                                                        // Let's use a dynamic color approach.
+                                                                                        // If 2 options: 0=Green, 1=Red? Or just Blue/Slate.
+                                                                                        // User asked for Male/Female, Agree/Disagree.
+                                                                                        // Let's stick to Blue for selected, White for unselected.
+                                                                                        const color = '#3b82f6';
+                                                                                        return (
+                                                                                            <button
+                                                                                                key={i}
+                                                                                                onClick={(e) => { e.stopPropagation(); if (canRespond) handleQuestionResponse(item._id, qIdx, opt); }}
+                                                                                                disabled={!canRespond}
+                                                                                                style={{
+                                                                                                    padding: '6px 12px',
+                                                                                                    borderRadius: '6px',
+                                                                                                    border: `1px solid ${isSelected ? color : '#cbd5e1'}`,
+                                                                                                    background: isSelected ? color : 'white',
+                                                                                                    color: isSelected ? 'white' : '#64748b',
+                                                                                                    fontSize: '0.75rem',
+                                                                                                    fontWeight: '600',
+                                                                                                    cursor: canRespond ? 'pointer' : 'default',
+                                                                                                    opacity: (!canRespond && !isSelected) ? 0.6 : 1,
+                                                                                                    transition: 'all 0.2s'
+                                                                                                }}
+                                                                                            >
+                                                                                                {opt}
+                                                                                            </button>
+                                                                                        )
+                                                                                    })}
+                                                                                </div>
+                                                                            )}
+
+                                                                            {q.type === 'multiple_choice' && (
+                                                                                <div className="d-flex flex-column gap-2">
+                                                                                    {q.options.map((opt) => {
+                                                                                        const currentResponses = Array.isArray(q.response) ? q.response : [];
+                                                                                        const isChecked = currentResponses.includes(opt);
+                                                                                        return (
+                                                                                            <label key={opt} className="d-flex align-items-center gap-2" style={{ cursor: canRespond ? 'pointer' : 'default', fontSize: '0.875rem', color: '#475569' }}>
+                                                                                                <input
+                                                                                                    type="checkbox"
+                                                                                                    checked={isChecked}
+                                                                                                    disabled={!canRespond}
+                                                                                                    onChange={(e) => {
+                                                                                                        e.stopPropagation();
+                                                                                                        if (canRespond) {
+                                                                                                            const newRes = isChecked
+                                                                                                                ? currentResponses.filter(r => r !== opt)
+                                                                                                                : [...currentResponses, opt];
+                                                                                                            handleQuestionResponse(item._id, qIdx, newRes);
+                                                                                                        }
+                                                                                                    }}
+                                                                                                />
+                                                                                                {opt}
+                                                                                            </label>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
+                                                                            )}
+
+                                                                            {q.type === 'text' && (
+                                                                                <div className="d-flex gap-2">
+                                                                                    <Form.Control
+                                                                                        size="sm"
+                                                                                        as="textarea"
+                                                                                        rows={2}
+                                                                                        disabled={!canRespond}
+                                                                                        defaultValue={q.response || ''}
+                                                                                        placeholder={canRespond ? "Type your answer..." : "No response yet"}
+                                                                                        onBlur={(e) => {
+                                                                                            if (canRespond && e.target.value !== q.response) {
+                                                                                                handleQuestionResponse(item._id, qIdx, e.target.value);
+                                                                                            }
+                                                                                        }}
+                                                                                        onClick={e => e.stopPropagation()}
+                                                                                        style={{ fontSize: '0.875rem' }}
+                                                                                    />
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
                                                     )}
 
                                                     {/* Client Response */}
@@ -462,7 +735,7 @@ const WorkLogs = () => {
 
                                                     {/* Action Buttons */}
                                                     {isAction && user.role === 'client' && item.status === 'pending' && (
-                                                        <div className="d-flex gap-2 mb-2">
+                                                        <div className="d-flex gap-2 mb-2 mt-3 justify-content-end">
                                                             <button
                                                                 onClick={() => handleActionClick(item._id, 'rejected')}
                                                                 style={{
@@ -562,6 +835,34 @@ const WorkLogs = () => {
                                                         >
                                                             {item.isStarred ? <StarFill size={18} /> : <Star size={18} />}
                                                         </button>
+                                                        {user.role === 'admin' && (
+                                                            <button
+                                                                onClick={(e) => handleDelete(e, item._id)}
+                                                                style={{
+                                                                    background: 'none',
+                                                                    border: 'none',
+                                                                    color: '#cbd5e1',
+                                                                    cursor: 'pointer',
+                                                                    padding: '6px',
+                                                                    borderRadius: '6px',
+                                                                    transition: 'all 0.2s',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center'
+                                                                }}
+                                                                onMouseEnter={(e) => {
+                                                                    e.currentTarget.style.background = '#fee2e2';
+                                                                    e.currentTarget.style.color = '#ef4444';
+                                                                }}
+                                                                onMouseLeave={(e) => {
+                                                                    e.currentTarget.style.background = 'none';
+                                                                    e.currentTarget.style.color = '#cbd5e1';
+                                                                }}
+                                                                title="Delete"
+                                                            >
+                                                                <Trash size={16} />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -619,18 +920,44 @@ const WorkLogs = () => {
                             ))}
                         </div>
 
+                        {(user.role === 'admin') && (
+                            <Form.Group className="mb-3">
+                                <Form.Label style={{ fontSize: '0.813rem', fontWeight: '600', color: '#475569' }}>Client</Form.Label>
+                                <Form.Select
+                                    value={formData.clientId || ''}
+                                    onChange={e => {
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            clientId: e.target.value,
+                                            websiteId: '' // Reset website when client changes
+                                        }));
+                                    }}
+                                    style={{ borderRadius: '8px', fontSize: '0.875rem' }}
+                                >
+                                    <option value="">Select client...</option>
+                                    {/* Extract unique clients from websites list */}
+                                    {[...new Map(websites.filter(w => w.client).map(w => [w.client._id, w.client])).values()].map(client => (
+                                        <option key={client._id} value={client._id}>{client.name}</option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        )}
+
                         <Form.Group className="mb-3">
                             <Form.Label style={{ fontSize: '0.813rem', fontWeight: '600', color: '#475569' }}>Website</Form.Label>
                             <Form.Select
                                 value={formData.websiteId}
                                 onChange={e => setFormData({ ...formData, websiteId: e.target.value })}
                                 required
+                                disabled={user.role === 'admin' && !formData.clientId}
                                 style={{ borderRadius: '8px', fontSize: '0.875rem' }}
                             >
-                                <option value="">Select project...</option>
-                                {websites.map(w => (
-                                    <option key={w._id} value={w._id}>{w.name}</option>
-                                ))}
+                                <option value="">Select website...</option>
+                                {websites
+                                    .filter(w => user.role !== 'admin' || (formData.clientId && w.client && w.client._id === formData.clientId))
+                                    .map(w => (
+                                        <option key={w._id} value={w._id}>{w.name}</option>
+                                    ))}
                             </Form.Select>
                         </Form.Group>
 
@@ -659,6 +986,81 @@ const WorkLogs = () => {
                                 style={{ borderRadius: '8px', fontSize: '0.875rem' }}
                                 placeholder={formData.type === 'log' ? "What did you work on?" : "Details..."}
                             />
+                        </Form.Group>
+
+                        {/* Question Builder */}
+                        {formData.type === 'action' && (
+                            <div className="mb-4">
+                                <Form.Label style={{ fontSize: '0.813rem', fontWeight: '600', color: '#475569', display: 'flex', justifyContent: 'space-between' }}>
+                                    Interactive Questions
+                                    <Button size="sm" variant="link" onClick={handleAddQuestion} style={{ padding: 0, textDecoration: 'none', fontSize: '0.75rem' }}>
+                                        + Add Question
+                                    </Button>
+                                </Form.Label>
+                                {questions.map((q, qIndex) => (
+                                    <div key={qIndex} className="p-3 mb-3" style={{ background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                        <div className="d-flex justify-content-between mb-2">
+                                            <span style={{ fontSize: '0.75rem', fontWeight: '600', color: '#94a3b8' }}>Question {qIndex + 1}</span>
+                                            <Trash size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => handleRemoveQuestion(qIndex)} />
+                                        </div>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Question text..."
+                                            value={q.text}
+                                            onChange={(e) => handleUpdateQuestion(qIndex, 'text', e.target.value)}
+                                            className="mb-2"
+                                            size="sm"
+                                        />
+                                        <Form.Select
+                                            value={q.type}
+                                            onChange={(e) => handleUpdateQuestion(qIndex, 'type', e.target.value)}
+                                            className="mb-2"
+                                            size="sm"
+                                        >
+                                            <option value="approval">Button Selection (e.g. Yes/No)</option>
+                                            <option value="multiple_choice">Multiple Choice</option>
+                                            <option value="text">Text Response</option>
+                                        </Form.Select>
+
+                                        {(q.type === 'multiple_choice' || q.type === 'approval') && (
+                                            <div className="pl-3 border-l-2 border-slate-200">
+                                                {q.options.map((opt, oIndex) => (
+                                                    <div key={oIndex} className="d-flex gap-2 mb-1">
+                                                        <Form.Control
+                                                            type="text"
+                                                            value={opt}
+                                                            onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
+                                                            size="sm"
+                                                            placeholder={`Option ${oIndex + 1}`}
+                                                        />
+                                                        {/* Allow removal only if not approval, or if approval has > 2 (though we limit add to 2) */}
+                                                        {/* Actually user said "only two", so maybe disallow removing if count is <= 2 for approval? */}
+                                                        {/* Let's keeps it simple: Allow remove, but limit add. */}
+                                                        <Button size="sm" variant="outline-danger" style={{ padding: '0 6px' }} onClick={() => handleRemoveOption(qIndex, oIndex)}>×</Button>
+                                                    </div>
+                                                ))}
+                                                {/* Limit Approval to 2 options */}
+                                                {(q.type !== 'approval' || q.options.length < 2) && (
+                                                    <Button size="sm" variant="link" onClick={() => handleAddOption(qIndex)} style={{ padding: 0, fontSize: '0.75rem' }}>+ Add Option</Button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <Form.Group className="mb-3">
+                            <Form.Label style={{ fontSize: '0.813rem', fontWeight: '600', color: '#475569' }}>Attachments</Form.Label>
+                            <Form.Control
+                                type="file"
+                                multiple
+                                onChange={handleFileChange}
+                                style={{ borderRadius: '8px', fontSize: '0.875rem' }}
+                            />
+                            <Form.Text className="text-muted" style={{ fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
+                                Allowed: Images (JPG, PNG, GIF, WEBP), PDF, Word (DOC/DOCX), Excel (XLS/XLSX), CSV
+                            </Form.Text>
                         </Form.Group>
 
                         {formData.type === 'log' && (

@@ -1,5 +1,7 @@
 const WorkLog = require('../models/WorkLog');
 const Website = require('../models/Website');
+const fs = require('fs');
+const path = require('path');
 
 // @desc    Create a work log
 // @route   POST /api/worklogs
@@ -19,6 +21,24 @@ const createWorkLog = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to log work for this website' });
         }
 
+        // Process attachments
+        let attachmentPaths = [];
+        if (req.files) {
+            attachmentPaths = req.files.map(file => `/uploads/${file.filename}`);
+        }
+
+        // Process questions (parse if stringified JSON from FormData)
+        let questions = [];
+        if (req.body.questions) {
+            try {
+                questions = typeof req.body.questions === 'string'
+                    ? JSON.parse(req.body.questions)
+                    : req.body.questions;
+            } catch (e) {
+                console.error('Failed to parse questions:', e);
+            }
+        }
+
         const workLog = await WorkLog.create({
             developer: req.user._id,
             website: websiteId,
@@ -27,7 +47,9 @@ const createWorkLog = async (req, res) => {
             tags: tags || [],
             type: req.body.type || 'log',
             title: req.body.title || '',
-            status: req.body.type === 'action' ? 'pending' : undefined
+            status: req.body.type === 'action' ? 'pending' : undefined,
+            attachments: attachmentPaths,
+            questions: questions
         });
 
         res.status(201).json(workLog);
@@ -68,6 +90,12 @@ const getWorkLogs = async (req, res) => {
             if (req.query.websiteId) {
                 query.website = req.query.websiteId;
             }
+        } else if (req.user.role === 'admin') {
+            // Admin sees all logs
+            // Optional: Filter by website if admin provided it
+            if (req.query.websiteId) {
+                query.website = req.query.websiteId;
+            }
         }
 
         // Filtering by Starred status
@@ -88,7 +116,7 @@ const getWorkLogs = async (req, res) => {
         const logs = await WorkLog.find(query)
             .populate('developer', 'name')
             .populate('website', 'name url')
-            .sort({ isStarred: -1, createdAt: -1 }) // Show starred first, then new
+            .sort({ createdAt: -1 }) // Show newest first
             .skip(skip)
             .limit(limit);
 
@@ -118,6 +146,9 @@ const updateWorkLog = async (req, res) => {
         if (req.body.isStarred !== undefined) {
             workLog.isStarred = req.body.isStarred;
         }
+        if (req.body.questions) {
+            workLog.questions = req.body.questions;
+        }
 
         const updatedWorkLog = await workLog.save();
         res.json(updatedWorkLog);
@@ -126,4 +157,43 @@ const updateWorkLog = async (req, res) => {
     }
 };
 
-module.exports = { createWorkLog, getWorkLogs, updateWorkLog };
+// @desc    Delete a work log
+// @route   DELETE /api/worklogs/:id
+// @access  Private/Admin
+const deleteWorkLog = async (req, res) => {
+    try {
+        const workLog = await WorkLog.findById(req.params.id);
+
+        if (!workLog) {
+            return res.status(404).json({ message: 'Work log not found' });
+        }
+
+        // Only Admin can delete
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Not authorized to delete work logs' });
+        }
+
+        // Delete attached files
+        if (workLog.attachments && workLog.attachments.length > 0) {
+            workLog.attachments.forEach(filePath => {
+                // filePath stored as /uploads/filename.ext
+                // We need to resolve to absolute path on server
+                const absolutePath = path.join(__dirname, '..', filePath);
+
+                fs.unlink(absolutePath, (err) => {
+                    if (err) {
+                        console.error(`Failed to delete file: ${absolutePath}`, err);
+                        // Continue deleting the log even if file deletion fails
+                    }
+                });
+            });
+        }
+
+        await workLog.deleteOne();
+        res.json({ message: 'Work log removed' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { createWorkLog, getWorkLogs, updateWorkLog, deleteWorkLog };

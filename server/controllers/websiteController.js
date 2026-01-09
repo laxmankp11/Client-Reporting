@@ -72,6 +72,40 @@ const updateWebsite = async (req, res) => {
 // @desc    Delete a website
 // @route   DELETE /api/websites/:id
 // @access  Private/Admin
+// @desc    Update hosting details (Admin or Client Owner)
+// @route   PUT /api/websites/:id/hosting
+// @access  Private
+const updateHostingDetails = async (req, res) => {
+    try {
+        const website = await Website.findById(req.params.id);
+
+        if (!website) {
+            return res.status(404).json({ message: 'Website not found' });
+        }
+
+        // Check authorization
+        if (req.user.role !== 'admin') {
+            // If not admin, must be the client owner
+            if (website.client && website.client.toString() !== req.user._id.toString()) {
+                return res.status(403).json({ message: 'Not authorized to update hosting details' });
+            }
+        }
+
+        website.hostingDetails = {
+            provider: req.body.provider || website.hostingDetails?.provider,
+            domain: req.body.domain || website.hostingDetails?.domain,
+            ftpHost: req.body.ftpHost || website.hostingDetails?.ftpHost,
+            ftpUser: req.body.ftpUser || website.hostingDetails?.ftpUser,
+            ftpPassword: req.body.ftpPassword || website.hostingDetails?.ftpPassword
+        };
+
+        const updatedWebsite = await website.save();
+        res.json(updatedWebsite);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 const deleteWebsite = async (req, res) => {
     try {
         const website = await Website.findById(req.params.id);
@@ -87,4 +121,4 @@ const deleteWebsite = async (req, res) => {
     }
 };
 
-module.exports = { createWebsite, getWebsites, updateWebsite, deleteWebsite };
+module.exports = { createWebsite, getWebsites, updateWebsite, deleteWebsite, updateHostingDetails };

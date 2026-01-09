@@ -6,6 +6,8 @@ import AdminClients from './pages/AdminClients';
 import AdminDevelopers from './pages/AdminDevelopers';
 import AdminWebsites from './pages/AdminWebsites';
 import WorkLogs from './pages/WorkLogs';
+import Competitors from './pages/Competitors';
+import HostingDetails from './pages/HostingDetails';
 import Layout from './components/Layout';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
@@ -27,6 +29,8 @@ const App = () => {
           <Route path="/developers" element={<ProtectedRoute><AdminDevelopers /></ProtectedRoute>} />
           <Route path="/websites" element={<ProtectedRoute><AdminWebsites /></ProtectedRoute>} />
           <Route path="/worklogs" element={<ProtectedRoute><WorkLogs /></ProtectedRoute>} />
+          <Route path="/hosting" element={<ProtectedRoute><HostingDetails /></ProtectedRoute>} />
+          <Route path="/competitors" element={<ProtectedRoute><Competitors /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </WebsiteProvider>

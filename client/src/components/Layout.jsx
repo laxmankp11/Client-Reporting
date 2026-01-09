@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Nav } from 'react-bootstrap';
-import { Speedometer2, People, BoxArrowRight, Grid, CodeSlash, Globe, Calendar3, List } from 'react-bootstrap-icons';
+import { Speedometer2, People, BoxArrowRight, Grid, CodeSlash, Globe, Calendar3, List, Hdd } from 'react-bootstrap-icons';
 import { useState } from 'react';
 
 import WebsiteSelector from './WebsiteSelector';
@@ -41,7 +41,6 @@ const Sidebar = ({ isOpen, toggle }) => {
 
             {/* Nav */}
             <div className="flex-1 overflow-y-auto py-6 px-4 custom-scrollbar">
-                <div className="px-4 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Menu</div>
                 <Nav className="flex-column gap-1">
 
                     {user?.role === 'admin' && (
@@ -55,6 +54,9 @@ const Sidebar = ({ isOpen, toggle }) => {
 
                     <div className="mt-6 px-4 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Work</div>
                     <NavItem to="/worklogs" icon={<Calendar3 />} label="Project Activity" active={isActive('/worklogs')} />
+                    <div className="mt-6 px-4 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Assets</div>
+                    <NavItem to="/hosting" icon={<Hdd />} label="Hosting Details" active={isActive('/hosting')} />
+                    <NavItem to="/competitors" icon={<Globe />} label="Competitors" active={isActive('/competitors')} />
                 </Nav>
             </div>
 
